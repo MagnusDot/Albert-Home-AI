@@ -1,0 +1,10 @@
+{
+  "api_url": "http://localhost:8080",
+  "agents": [
+    {
+      "id": "albert",
+      "name": "albert",
+      "description": "Albert IA est un agent qui peut répondre à vos questions et vous aider dans la vie quotidienne"
+    }
+  ]
+}
