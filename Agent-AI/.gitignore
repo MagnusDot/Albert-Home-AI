@@ -1,0 +1,29 @@
+node_modules
+.env
+
+# Modèles Porcupine (téléchargés automatiquement)
+Voice/models/*.ppn
+Voice/models/*.pv
+Voice/models/porcupine_params_fr.pv
+Voice/models/albert.ppn
+
+# Modèles Whisper (téléchargés automatiquement)
+Voice/models/*.bin
+Voice/models/*.json
+
+# Fichiers audio temporaires
+Voice/audio/*.wav
+Voice/audio/*.mp3
+Voice/audio/*.flac
+
+# Logs et fichiers temporaires
+*.log
+*.tmp
+*.onnx
+*.onnx.json
+*/.venv/*
+.DS_Store
+*.wav
+
+# Dossiers de logs
+logs/
