@@ -8,6 +8,8 @@ export class SpeakerManager {
   private audioBuffer: Buffer[] = [];
   private minBufferSize: number = 48000;
   private isStopping: boolean = false;
+  private isEnding: boolean = false;
+  private hasCalledFinished: boolean = false;
 
   setOnAudioFinished(callback: () => void): void {
     this.onAudioFinished = callback;
@@ -22,6 +24,8 @@ export class SpeakerManager {
       console.log(chalk.blue('🔊 Création d\'un nouveau speaker'));
       this.isPlaying = true;
       this.isStopping = false;
+      this.isEnding = false;
+      this.hasCalledFinished = false;
       this.audioBuffer = [];
       this.currentSpeaker = new Speaker({
         channels: 1,
@@ -35,9 +39,14 @@ export class SpeakerManager {
       });
       
       this.currentSpeaker.on('close', () => {
+        if (this.hasCalledFinished) {
+          return;
+        }
+        this.hasCalledFinished = true;
         console.log(chalk.dim('🔇 Speaker fermé - Audio terminé'));
         this.isPlaying = false;
         this.isStopping = false;
+        this.isEnding = false;
         this.currentSpeaker = null;
         this.audioBuffer = [];
         if (this.onAudioFinished) {
@@ -47,9 +56,10 @@ export class SpeakerManager {
 
       this.currentSpeaker.on('drain', () => {
         this.flushBuffer();
-        if (this.isStopping && this.audioBuffer.length === 0) {
+        if (this.isStopping && this.audioBuffer.length === 0 && !this.isEnding) {
           setTimeout(() => {
-            if (this.currentSpeaker && !this.currentSpeaker.destroyed) {
+            if (this.currentSpeaker && !this.currentSpeaker.destroyed && !this.isEnding) {
+              this.isEnding = true;
               this.currentSpeaker.end();
             }
           }, 200);
@@ -69,9 +79,10 @@ export class SpeakerManager {
 
   private flushBuffer(): void {
     if (!this.currentSpeaker || this.currentSpeaker.destroyed || this.audioBuffer.length === 0) {
-      if (this.isStopping && this.audioBuffer.length === 0) {
+      if (this.isStopping && this.audioBuffer.length === 0 && !this.isEnding) {
         setTimeout(() => {
-          if (this.currentSpeaker && !this.currentSpeaker.destroyed) {
+          if (this.currentSpeaker && !this.currentSpeaker.destroyed && !this.isEnding) {
+            this.isEnding = true;
             this.currentSpeaker.end();
           }
         }, 200);
@@ -90,9 +101,10 @@ export class SpeakerManager {
         }
       }
 
-      if (this.isStopping && this.audioBuffer.length === 0) {
+      if (this.isStopping && this.audioBuffer.length === 0 && !this.isEnding) {
         setTimeout(() => {
-          if (this.currentSpeaker && !this.currentSpeaker.destroyed) {
+          if (this.currentSpeaker && !this.currentSpeaker.destroyed && !this.isEnding) {
+            this.isEnding = true;
             this.currentSpeaker.end();
           }
         }, 200);
@@ -107,9 +119,10 @@ export class SpeakerManager {
     if (this.currentSpeaker && !this.currentSpeaker.destroyed) {
       this.isStopping = true;
       this.flushBuffer();
-      if (this.audioBuffer.length === 0) {
+      if (this.audioBuffer.length === 0 && !this.isEnding) {
         setTimeout(() => {
-          if (this.currentSpeaker && !this.currentSpeaker.destroyed) {
+          if (this.currentSpeaker && !this.currentSpeaker.destroyed && !this.isEnding) {
+            this.isEnding = true;
             this.currentSpeaker.end();
           }
         }, 200);
@@ -117,6 +130,8 @@ export class SpeakerManager {
     } else {
       this.isPlaying = false;
       this.isStopping = false;
+      this.isEnding = false;
+      this.hasCalledFinished = false;
       this.currentSpeaker = null;
       this.audioBuffer = [];
     }
