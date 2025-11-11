@@ -7,9 +7,11 @@ import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import { MicrophoneManager } from './audio/microphone.js';
 import { SpeakerManager } from './audio/speaker.js';
+import { AUDIO_CONFIG } from './config/constants.js';
 import { loadAlbertPrompt } from './config/prompt.js';
 import { SessionManager } from './session/manager.js';
 import { getTools } from './tools/index.js';
+import type { AudioEvent } from './types/index.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -17,11 +19,11 @@ const __dirname = dirname(__filename);
 dotenv.config({ path: join(__dirname, '.env') });
 
 export class AlbertVoiceAgent {
-  private agent: RealtimeAgent;
+  private readonly agent: RealtimeAgent;
   private sessionManager: SessionManager | null = null;
-  private microphoneManager: MicrophoneManager;
-  private speakerManager: SpeakerManager;
-  private apiKey: string;
+  private readonly microphoneManager: MicrophoneManager;
+  private readonly speakerManager: SpeakerManager;
+  private readonly apiKey: string;
 
   constructor() {
     const apiKey = process.env.OPENAI_API_KEY;
@@ -55,7 +57,7 @@ export class AlbertVoiceAgent {
         setTimeout(() => {
           this.microphoneManager.enable();
           console.log(chalk.green('🎤 Microphone réactivé - Prêt à écouter'));
-        }, 500);
+        }, AUDIO_CONFIG.MIC_REACTIVATION_DELAY_MS);
       });
 
       this.sessionManager.setCallbacks({
@@ -73,7 +75,7 @@ export class AlbertVoiceAgent {
         },
       });
 
-      this.sessionManager.onAudio((audioEvent: any) => {
+      this.sessionManager.onAudio((audioEvent: AudioEvent) => {
         if (audioEvent.data) {
           this.speakerManager.playAudio(audioEvent.data);
         }

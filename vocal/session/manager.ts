@@ -1,34 +1,21 @@
 import { RealtimeAgent, RealtimeSession } from '@openai/agents/realtime';
 import chalk from 'chalk';
+import type { AudioEvent, SessionCallbacks } from '../types/index.js';
 
 export class SessionManager {
   private session: RealtimeSession | null = null;
-  private agent: RealtimeAgent;
-  private apiKey: string;
-  private onAgentStart?: () => void;
-  private onAgentEnd?: () => void;
-  private onAudioStart?: () => void;
-  private onAudioStop?: () => void;
-  private onResponseCreated?: () => void;
-  private audioCallback?: (audioEvent: any) => void;
+  private readonly agent: RealtimeAgent;
+  private readonly apiKey: string;
+  private callbacks: SessionCallbacks = {};
+  private audioCallback?: (audioEvent: AudioEvent) => void;
 
   constructor(agent: RealtimeAgent, apiKey: string) {
     this.agent = agent;
     this.apiKey = apiKey;
   }
 
-  setCallbacks(callbacks: {
-    onAgentStart?: () => void;
-    onAgentEnd?: () => void;
-    onAudioStart?: () => void;
-    onAudioStop?: () => void;
-    onResponseCreated?: () => void;
-  }): void {
-    this.onAgentStart = callbacks.onAgentStart;
-    this.onAgentEnd = callbacks.onAgentEnd;
-    this.onAudioStart = callbacks.onAudioStart;
-    this.onAudioStop = callbacks.onAudioStop;
-    this.onResponseCreated = callbacks.onResponseCreated;
+  setCallbacks(callbacks: SessionCallbacks): void {
+    this.callbacks = { ...callbacks };
   }
 
   async connect(): Promise<void> {
@@ -74,28 +61,28 @@ export class SessionManager {
 
     this.session.on('agent_start', () => {
       console.log(chalk.blue('🤖 Agent démarre...'));
-      this.onAgentStart?.();
+      this.callbacks.onAgentStart?.();
     });
 
     this.session.on('agent_end', (context, agent, output) => {
       console.log(chalk.blue(`🤖 Agent terminé: ${output}`));
-      this.onAgentEnd?.();
+      this.callbacks.onAgentEnd?.();
     });
 
     this.session.on('audio_start', () => {
       console.log(chalk.blue('🔊 Audio démarre...'));
-      this.onAudioStart?.();
+      this.callbacks.onAudioStart?.();
     });
 
     this.session.on('audio_stopped', () => {
       console.log(chalk.blue('🔇 Audio arrêté'));
-      this.onAudioStop?.();
+      this.callbacks.onAudioStop?.();
     });
 
-    this.session.on('transport_event', (event: any) => {
+    this.session.on('transport_event', (event: { type?: string }) => {
       if (event.type === 'response.created') {
         console.log(chalk.yellow('🛑 Réponse créée'));
-        this.onResponseCreated?.();
+        this.callbacks.onResponseCreated?.();
       }
     });
 
@@ -141,7 +128,7 @@ export class SessionManager {
     }
   }
 
-  onAudio(callback: (audioEvent: any) => void): void {
+  onAudio(callback: (audioEvent: AudioEvent) => void): void {
     this.audioCallback = callback;
     if (this.session) {
       this.session.on('audio', callback);

@@ -1,15 +1,16 @@
 import chalk from 'chalk';
 import Speaker from 'speaker';
+import { AUDIO_CONFIG } from '../config/constants.js';
 
 export class SpeakerManager {
   private currentSpeaker: Speaker | null = null;
   private isPlaying: boolean = false;
   private onAudioFinished?: () => void;
   private audioBuffer: Buffer[] = [];
-  private minBufferSize: number = 48000;
   private isStopping: boolean = false;
   private isEnding: boolean = false;
   private hasCalledFinished: boolean = false;
+  private endTimeout: NodeJS.Timeout | null = null;
 
   setOnAudioFinished(callback: () => void): void {
     this.onAudioFinished = callback;
@@ -21,16 +22,14 @@ export class SpeakerManager {
     }
 
     if (!this.currentSpeaker || this.currentSpeaker.destroyed) {
+      this.resetState();
       console.log(chalk.blue('🔊 Création d\'un nouveau speaker'));
       this.isPlaying = true;
-      this.isStopping = false;
-      this.isEnding = false;
-      this.hasCalledFinished = false;
       this.audioBuffer = [];
       this.currentSpeaker = new Speaker({
-        channels: 1,
-        bitDepth: 16,
-        sampleRate: 24000,
+        channels: AUDIO_CONFIG.CHANNELS,
+        bitDepth: AUDIO_CONFIG.BIT_DEPTH,
+        sampleRate: AUDIO_CONFIG.SAMPLE_RATE,
       });
       
       this.currentSpeaker.on('error', (err: Error) => {
@@ -56,37 +55,22 @@ export class SpeakerManager {
 
       this.currentSpeaker.on('drain', () => {
         this.flushBuffer();
-        if (this.isStopping && this.audioBuffer.length === 0 && !this.isEnding) {
-          setTimeout(() => {
-            if (this.currentSpeaker && !this.currentSpeaker.destroyed && !this.isEnding) {
-              this.isEnding = true;
-              this.currentSpeaker.end();
-            }
-          }, 200);
-        }
+        this.scheduleEndIfNeeded();
       });
     }
 
     const audioBuffer = Buffer.from(audioData);
     this.audioBuffer.push(audioBuffer);
 
-    const totalBufferSize = this.audioBuffer.reduce((sum, buf) => sum + buf.length, 0);
-
-    if (totalBufferSize >= this.minBufferSize || !this.currentSpeaker.writable) {
+    const totalBufferSize = this.getTotalBufferSize();
+    if (totalBufferSize >= AUDIO_CONFIG.MIN_BUFFER_SIZE || !this.currentSpeaker.writable) {
       this.flushBuffer();
     }
   }
 
   private flushBuffer(): void {
     if (!this.currentSpeaker || this.currentSpeaker.destroyed || this.audioBuffer.length === 0) {
-      if (this.isStopping && this.audioBuffer.length === 0 && !this.isEnding) {
-        setTimeout(() => {
-          if (this.currentSpeaker && !this.currentSpeaker.destroyed && !this.isEnding) {
-            this.isEnding = true;
-            this.currentSpeaker.end();
-          }
-        }, 200);
-      }
+      this.scheduleEndIfNeeded();
       return;
     }
 
@@ -101,17 +85,36 @@ export class SpeakerManager {
         }
       }
 
-      if (this.isStopping && this.audioBuffer.length === 0 && !this.isEnding) {
-        setTimeout(() => {
-          if (this.currentSpeaker && !this.currentSpeaker.destroyed && !this.isEnding) {
-            this.isEnding = true;
-            this.currentSpeaker.end();
-          }
-        }, 200);
-      }
+      this.scheduleEndIfNeeded();
     } catch (error) {
       console.error(chalk.red('❌ Erreur écriture audio:'), error);
       this.stop();
+    }
+  }
+
+  private scheduleEndIfNeeded(): void {
+    if (this.isStopping && this.audioBuffer.length === 0 && !this.isEnding && !this.endTimeout) {
+      this.endTimeout = setTimeout(() => {
+        this.endTimeout = null;
+        if (this.currentSpeaker && !this.currentSpeaker.destroyed && !this.isEnding) {
+          this.isEnding = true;
+          this.currentSpeaker.end();
+        }
+      }, AUDIO_CONFIG.STOP_DELAY_MS);
+    }
+  }
+
+  private getTotalBufferSize(): number {
+    return this.audioBuffer.reduce((sum, buf) => sum + buf.length, 0);
+  }
+
+  private resetState(): void {
+    this.isStopping = false;
+    this.isEnding = false;
+    this.hasCalledFinished = false;
+    if (this.endTimeout) {
+      clearTimeout(this.endTimeout);
+      this.endTimeout = null;
     }
   }
 
@@ -119,19 +122,10 @@ export class SpeakerManager {
     if (this.currentSpeaker && !this.currentSpeaker.destroyed) {
       this.isStopping = true;
       this.flushBuffer();
-      if (this.audioBuffer.length === 0 && !this.isEnding) {
-        setTimeout(() => {
-          if (this.currentSpeaker && !this.currentSpeaker.destroyed && !this.isEnding) {
-            this.isEnding = true;
-            this.currentSpeaker.end();
-          }
-        }, 200);
-      }
+      this.scheduleEndIfNeeded();
     } else {
       this.isPlaying = false;
-      this.isStopping = false;
-      this.isEnding = false;
-      this.hasCalledFinished = false;
+      this.resetState();
       this.currentSpeaker = null;
       this.audioBuffer = [];
     }
