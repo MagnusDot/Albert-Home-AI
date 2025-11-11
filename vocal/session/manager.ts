@@ -60,12 +60,16 @@ export class SessionManager {
   private setupEventHandlers(): void {
     if (!this.session) return;
 
-    this.session.on('agent_tool_start', (context, agent, tool) => {
+    this.session.on('agent_tool_start', (context, agent, tool, details: any) => {
+      const params = details?.toolCall?.arguments ? JSON.stringify(details.toolCall.arguments, null, 2) : 'aucun paramètre';
       console.log(chalk.yellow(`🔧 Appel d'outil: ${tool.name}`));
+      console.log(chalk.dim(`   Paramètres: ${params}`));
     });
 
     this.session.on('agent_tool_end', (context, agent, tool, result) => {
-      console.log(chalk.green(`✅ Outil ${tool.name} terminé: ${result}`));
+      const resultStr = typeof result === 'object' ? JSON.stringify(result) : String(result);
+      console.log(chalk.green(`✅ Outil ${tool.name} terminé`));
+      console.log(chalk.dim(`   Résultat: ${resultStr}`));
     });
 
     this.session.on('agent_start', () => {

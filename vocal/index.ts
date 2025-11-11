@@ -75,10 +75,7 @@ export class AlbertVoiceAgent {
 
       this.sessionManager.onAudio((audioEvent: any) => {
         if (audioEvent.data) {
-          console.log(chalk.dim(`🔊 Audio reçu: ${audioEvent.data.byteLength} bytes`));
           this.speakerManager.playAudio(audioEvent.data);
-        } else {
-          console.log(chalk.yellow('⚠️  Événement audio sans données'));
         }
       });
 
