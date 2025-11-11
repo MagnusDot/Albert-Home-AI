@@ -19,10 +19,10 @@ Notre mission est de démocratiser l'accès à une IA domestique vraiment intell
 - **Outils spécialisés** : Météo, calculs, recherche web, et plus
 - **Extensibilité MCP** : Support du Model Context Protocol
 
-### 🎙️ Interface Vocale (En développement)
-- **Reconnaissance vocale** : Parlez naturellement à Albert
-- **Synthèse vocale** : Réponses audio fluides
-- **Activation par mot-clé** : "Hey Albert !"
+### 🎙️ Interface Vocale
+- **Speech-to-Speech** : Conversation vocale complète via OpenAI Voice Agents
+- **Temps réel** : Transcription et réponse vocale en temps réel
+- **Outils vocaux** : Calculs et météo accessibles par la voix
 
 ### 🔧 API REST Complète
 - **Endpoints RESTful** : Intégration facile
@@ -36,10 +36,10 @@ Notre mission est de démocratiser l'accès à une IA domestique vraiment intell
 Albert-Home-AI/
 ├── 🤖 Agent-AI/              # Cœur de l'intelligence artificielle
 │   ├── Agents/               # Agents spécialisés (LangGraph)
-│   │   └── myges/           # Agent principal avec outils
+│   │   └── albert/         # Agent principal avec outils
 │   ├── CLI/                 # Interface en ligne de commande
 │   └── serveur/            # API REST + WebSockets
-├── 🎙️ Voice_client/         # Client vocal (en développement)
+├── 🎙️ vocal/                # Agent vocal OpenAI (speech-to-speech)
 └── 📖 Documentation/        # Guides et tutoriels
 ```
 
@@ -96,11 +96,16 @@ npm run voice
 
 ### 🎤 Interface Vocale (Recommandée)
 ```bash
-# Démarrer le client vocal
-npm run voice
+# Aller dans le dossier vocal
+cd vocal
 
-# Tapez vos messages et Albert répondra
-# Utilise Whisper pour la reconnaissance vocale
+# Installer les dépendances
+npm install
+
+# Démarrer l'agent vocal
+npm start
+
+# Parlez directement à Albert - conversation speech-to-speech complète
 ```
 
 ### CLI (pour développeurs)

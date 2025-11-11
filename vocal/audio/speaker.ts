@@ -1,0 +1,69 @@
+import chalk from 'chalk';
+import Speaker from 'speaker';
+
+export class SpeakerManager {
+  private currentSpeaker: Speaker | null = null;
+  private isPlaying: boolean = false;
+  private onAudioFinished?: () => void;
+
+  setOnAudioFinished(callback: () => void): void {
+    this.onAudioFinished = callback;
+  }
+
+  playAudio(audioData: ArrayBuffer): void {
+    // Si on n'a pas de speaker actif, en créer un nouveau
+    if (!this.currentSpeaker || this.currentSpeaker.destroyed) {
+      console.log(chalk.blue('🔊 Création d\'un nouveau speaker'));
+      this.isPlaying = true;
+      this.currentSpeaker = new Speaker({
+        channels: 1,
+        bitDepth: 16,
+        sampleRate: 24000,
+      });
+      
+      this.currentSpeaker.on('error', (err: Error) => {
+        console.error(chalk.red('❌ Erreur speaker:'), err);
+        this.stop();
+      });
+      
+      this.currentSpeaker.on('close', () => {
+        console.log(chalk.dim('🔇 Speaker fermé - Audio terminé'));
+        this.isPlaying = false;
+        this.currentSpeaker = null;
+        // Notifier que l'audio est vraiment terminé
+        if (this.onAudioFinished) {
+          this.onAudioFinished();
+        }
+      });
+    }
+
+    // Écrire l'audio dans le speaker actif
+    if (this.currentSpeaker && !this.currentSpeaker.destroyed) {
+      const audioBuffer = Buffer.from(audioData);
+      try {
+        this.currentSpeaker.write(audioBuffer);
+      } catch (error) {
+        console.error(chalk.red('❌ Erreur écriture audio:'), error);
+        this.stop();
+      }
+    }
+  }
+
+  stop(): void {
+    if (this.currentSpeaker && !this.currentSpeaker.destroyed) {
+      // Fermer le stream pour qu'il finisse de jouer son buffer
+      // L'événement 'close' sera déclenché quand tout sera terminé
+      this.currentSpeaker.end();
+      // Ne pas mettre currentSpeaker à null ici, laisser l'événement 'close' s'en charger
+    } else {
+      // Si le speaker n'existe pas ou est déjà détruit, on peut nettoyer immédiatement
+      this.isPlaying = false;
+      this.currentSpeaker = null;
+    }
+  }
+
+  isActive(): boolean {
+    return this.isPlaying;
+  }
+}
+
