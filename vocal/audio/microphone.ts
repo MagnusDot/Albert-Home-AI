@@ -21,7 +21,6 @@ export class MicrophoneManager {
       this.recorder.stream()
         .on('data', (chunk: Buffer) => {
           if (this.isEnabled && this.onAudioData) {
-            // Convertir Buffer en ArrayBuffer
             const arrayBuffer = new ArrayBuffer(chunk.length);
             const view = new Uint8Array(arrayBuffer);
             view.set(chunk);

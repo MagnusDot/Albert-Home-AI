@@ -46,10 +46,8 @@ export class SessionManager {
       },
     });
 
-    // Configurer les événements AVANT la connexion
     this.setupEventHandlers();
 
-    // Enregistrer le callback audio s'il existe
     if (this.audioCallback) {
       this.session.on('audio', this.audioCallback);
     }
@@ -62,7 +60,6 @@ export class SessionManager {
   private setupEventHandlers(): void {
     if (!this.session) return;
 
-    // Outils
     this.session.on('agent_tool_start', (context, agent, tool) => {
       console.log(chalk.yellow(`🔧 Appel d'outil: ${tool.name}`));
     });
@@ -71,7 +68,6 @@ export class SessionManager {
       console.log(chalk.green(`✅ Outil ${tool.name} terminé: ${result}`));
     });
 
-    // Agent
     this.session.on('agent_start', () => {
       console.log(chalk.blue('🤖 Agent démarre...'));
       this.onAgentStart?.();
@@ -82,7 +78,6 @@ export class SessionManager {
       this.onAgentEnd?.();
     });
 
-    // Audio
     this.session.on('audio_start', () => {
       console.log(chalk.blue('🔊 Audio démarre...'));
       this.onAudioStart?.();
@@ -93,7 +88,6 @@ export class SessionManager {
       this.onAudioStop?.();
     });
 
-    // Transport events
     this.session.on('transport_event', (event: any) => {
       if (event.type === 'response.created') {
         console.log(chalk.yellow('🛑 Réponse créée'));
@@ -101,9 +95,7 @@ export class SessionManager {
       }
     });
 
-    // Historique (transcriptions)
     this.session.on('history_added', (item: any) => {
-      // Transcription de l'utilisateur
       if (item.type === 'message' && item.role === 'user') {
         const textContent = item.content?.find((c: any) => c.type === 'input_text')?.text;
         const audioContent = item.content?.find((c: any) => c.type === 'input_audio');
@@ -113,14 +105,12 @@ export class SessionManager {
           console.log(chalk.cyan(`💬 Vous: ${audioContent.transcript}`));
         }
       }
-      // Réponse d'Albert
       if (item.type === 'message' && item.role === 'assistant') {
         const textContent = item.content?.find((c: any) => c.type === 'text')?.text;
         if (textContent) {
           console.log(chalk.green(`🤖 Albert: ${textContent}`));
         }
       }
-      // Transcription audio de la réponse
       if (item.type === 'response_audio_transcript_delta' || item.type === 'response_audio_transcript_done') {
         if (item.transcript) {
           console.log(chalk.green(`🤖 Albert: ${item.transcript}`));
@@ -128,7 +118,6 @@ export class SessionManager {
       }
     });
 
-    // Erreurs
     this.session.on('error', (errorEvent: any) => {
       const error = errorEvent?.error || errorEvent;
       const errorMessage = error?.message || error?.toString() || 'Erreur inconnue';
@@ -150,7 +139,6 @@ export class SessionManager {
 
   onAudio(callback: (audioEvent: any) => void): void {
     this.audioCallback = callback;
-    // Si la session existe déjà, enregistrer immédiatement
     if (this.session) {
       this.session.on('audio', callback);
     }

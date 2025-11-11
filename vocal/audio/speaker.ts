@@ -11,7 +11,6 @@ export class SpeakerManager {
   }
 
   playAudio(audioData: ArrayBuffer): void {
-    // Si on n'a pas de speaker actif, en créer un nouveau
     if (!this.currentSpeaker || this.currentSpeaker.destroyed) {
       console.log(chalk.blue('🔊 Création d\'un nouveau speaker'));
       this.isPlaying = true;
@@ -30,14 +29,12 @@ export class SpeakerManager {
         console.log(chalk.dim('🔇 Speaker fermé - Audio terminé'));
         this.isPlaying = false;
         this.currentSpeaker = null;
-        // Notifier que l'audio est vraiment terminé
         if (this.onAudioFinished) {
           this.onAudioFinished();
         }
       });
     }
 
-    // Écrire l'audio dans le speaker actif
     if (this.currentSpeaker && !this.currentSpeaker.destroyed) {
       const audioBuffer = Buffer.from(audioData);
       try {
@@ -51,12 +48,8 @@ export class SpeakerManager {
 
   stop(): void {
     if (this.currentSpeaker && !this.currentSpeaker.destroyed) {
-      // Fermer le stream pour qu'il finisse de jouer son buffer
-      // L'événement 'close' sera déclenché quand tout sera terminé
       this.currentSpeaker.end();
-      // Ne pas mettre currentSpeaker à null ici, laisser l'événement 'close' s'en charger
     } else {
-      // Si le speaker n'existe pas ou est déjà détruit, on peut nettoyer immédiatement
       this.isPlaying = false;
       this.currentSpeaker = null;
     }

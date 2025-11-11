@@ -14,7 +14,6 @@ import { getTools } from './tools/index.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Charger les variables d'environnement
 dotenv.config({ path: join(__dirname, '.env') });
 
 export class AlbertVoiceAgent {
@@ -50,41 +49,30 @@ export class AlbertVoiceAgent {
     console.log(chalk.dim('🚀 Initialisation de l\'agent vocal...'));
 
     try {
-      // Créer le gestionnaire de session
       this.sessionManager = new SessionManager(this.agent, this.apiKey);
 
-      // Configurer le callback pour réactiver le microphone quand l'audio est vraiment terminé
       this.speakerManager.setOnAudioFinished(() => {
-        // Attendre un petit délai supplémentaire pour s'assurer que tout est bien terminé
         setTimeout(() => {
           this.microphoneManager.enable();
           console.log(chalk.green('🎤 Microphone réactivé - Prêt à écouter'));
         }, 500);
       });
 
-      // Configurer les callbacks pour gérer le microphone
       this.sessionManager.setCallbacks({
         onResponseCreated: () => {
-          // Arrêter complètement le microphone dès qu'une réponse est créée
           this.microphoneManager.disable();
         },
         onAgentStart: () => {
-          // S'assurer que le microphone est arrêté
           this.microphoneManager.disable();
         },
         onAudioStart: () => {
-          // S'assurer que le microphone est arrêté quand l'audio démarre
           this.microphoneManager.disable();
         },
         onAudioStop: () => {
-          // L'API a fini d'envoyer de l'audio, on ferme le speaker
-          // pour qu'il finisse de jouer son buffer et se ferme proprement
           this.speakerManager.stop();
-          // Le callback onAudioFinished sera appelé quand le speaker sera vraiment fermé
         },
       });
 
-      // Enregistrer l'événement audio AVANT la connexion
       this.sessionManager.onAudio((audioEvent: any) => {
         if (audioEvent.data) {
           console.log(chalk.dim(`🔊 Audio reçu: ${audioEvent.data.byteLength} bytes`));
@@ -94,14 +82,11 @@ export class AlbertVoiceAgent {
         }
       });
 
-      // Se connecter à la session
       await this.sessionManager.connect();
       console.log(chalk.green('✅ Agent vocal connecté et prêt !'));
 
-      // Démarrer le microphone
       try {
         await this.microphoneManager.start((audio) => {
-          // Envoyer l'audio à la session seulement si le microphone est activé
           if (this.sessionManager) {
             this.sessionManager.sendAudio(audio);
           }
@@ -116,7 +101,6 @@ export class AlbertVoiceAgent {
         }, 1000);
       }
 
-      // Garder la session active
       process.on('SIGINT', async () => {
         console.log(chalk.blue('\n🧹 Fermeture de la session...'));
         await this.cleanup();
@@ -139,7 +123,6 @@ export class AlbertVoiceAgent {
   }
 }
 
-// Point d'entrée
 if (import.meta.url === `file://${process.argv[1]}`) {
   const voiceAgent = new AlbertVoiceAgent();
   

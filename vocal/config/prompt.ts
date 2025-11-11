@@ -11,7 +11,6 @@ export function loadAlbertPrompt(): string {
     const promptPath = join(__dirname, '../prompt.md');
     let prompt = readFileSync(promptPath, 'utf-8');
     
-    // Remplacer les placeholders par les valeurs actuelles
     const now = new Date();
     const date = now.toLocaleDateString('fr-FR', { 
       weekday: 'long', 
